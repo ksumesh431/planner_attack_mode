@@ -18,5 +18,5 @@ data
 .env.local
 
 README.md
-instructions.md
+architecture.md
 chrome_dev_tools_lighthouse.json
