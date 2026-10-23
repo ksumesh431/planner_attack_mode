@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --hot src/index.ts",
-    "build": "bun build ./src/index.html --outdir=dist --target=browser --minify --define:process.env.NODE_ENV='\"production\"'",
+    "build": "bun build ./src/index.html --outdir=dist --target=browser --minify --splitting --min-chunk-size=16384 --define:process.env.NODE_ENV='\"production\"'",
     "typecheck": "bun check",
     "test": "bun test"
   },

@@ -77,8 +77,9 @@ GitHub Actions ──► GHCR image ──► Docker on the server
 ### Page load
 
 1. The Go server returns `index.html` for any non-API route, so deep links work.
-2. Hashed JS/CSS assets are served from the embedded filesystem with `Cache-Control: immutable`.
-3. Assets are precompressed at build time. The server negotiates Brotli or gzip from `Accept-Encoding` and sets `Vary`.
+2. Hashed JS and lazy route chunks are served from the embedded filesystem with `Cache-Control: immutable`.
+3. CSS is inlined into `index.html`; the document is precompressed and served with `no-cache`.
+4. Assets are precompressed at build time. The server negotiates Brotli or gzip from `Accept-Encoding` and sets `Vary`.
 4. The SPA checks `GET /api/auth/me`, then loads tasks for the current date.
 
 ### API
@@ -313,7 +314,7 @@ bun run typecheck
 - Session tokens are 256-bit random values; only SHA-256 hashes are stored.
 - Cookie is `HttpOnly`, `SameSite=Strict`, with `Secure` over HTTPS.
 - Login attempts are limited to 5 per IP per 15 minutes.
-- Strict Content Security Policy, `nosniff`, frame-deny, and no-store API headers.
+- Strict Content Security Policy, `nosniff`, frame-deny, and no-store API headers. The CSP allows same-origin resources plus Cloudflare Web Analytics (`static.cloudflareinsights.com`) when it is enabled.
 - Request bodies are capped at 64 KiB; HTTP has read/write/idle timeouts.
 - Container runs non-root with a read-only root filesystem, no capabilities, and no OS packages.
 - Docker Scout reports no critical, high, medium, or low findings. One unspecified module-level advisory remains for `golang.org/x/crypto/openpgp`; the package is not imported, and no fixed release exists.
@@ -322,11 +323,13 @@ bun run typecheck
 
 ## 13. Performance
 
-- The initial JS bundle is ~597 KB minified, but ~148 KB over the wire with Brotli (`~177 KB` gzip) and the CSS is ~5 KB Brotli.
+- The initial JS bundle is ~594 KB minified, but ~148 KB over the wire with Brotli (`~178 KB` gzip). Calendar and Stats are lazy-loaded as separate chunks.
+- CSS is inlined into `index.html` (~5.5 KB Brotli including the app shell), removing a render-blocking stylesheet request.
 - Assets are precompressed at build time, so serving them costs no per-request CPU.
-- Hashed assets are cached for a year; HTML is `no-cache`.
-- Lighthouse on mobile throttling: **Performance 0.97, Accessibility 1.00, Best Practices 1.00** on the day page, with LCP ~2.2 s and total transfer ~154 KiB.
-- Remaining minor opportunities: route-level code splitting (~70 KB used by Calendar/Stats) and eliminating the spinner-to-content layout shift (CLS 0.044).
+- Hashed JS chunks are cached for a year; `index.html`, the manifest, and the service worker are revalidated.
+- A static boot splash is painted before React starts, improving first paint.
+- Lighthouse on mobile throttling (empty day page): **Performance 0.96–0.97, Accessibility 1.00, Best Practices 1.00**, with FCP ~1.5 s, LCP ~2.3 s, TBT ~50–150 ms, and CLS 0–0.044.
+- Remaining minor opportunities: route-specific JS (~66 KB unused on the initial route), the 4-hour Cloudflare cache TTL on the tiny service-worker registration script, and optional source maps.
 
 ## 14. Project layout
 

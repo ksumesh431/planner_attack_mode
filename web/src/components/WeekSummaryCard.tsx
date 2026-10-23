@@ -16,15 +16,7 @@ export function WeekSummaryCard({ today }: { today: string }) {
   const stats = useStats(week.from, week.to);
 
   if (stats.isLoading) {
-    return (
-      <section className="week-summary week-summary-loading" aria-label="This week summary">
-        <div className="week-summary-head">
-          <span className="eyebrow">This week</span>
-          <span className="muted small">{rangeLabel(week)}</span>
-        </div>
-        <p className="muted">Loading this week…</p>
-      </section>
-    );
+    return null;
   }
 
   if (stats.isError || !stats.data) {

@@ -84,7 +84,9 @@ func securityHeaders() gin.HandlerFunc {
 		c.Header(
 			"Content-Security-Policy",
 			"default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "+
-				"img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'",
+				"img-src 'self' data:; style-src 'self' 'unsafe-inline'; "+
+				"script-src 'self' https://static.cloudflareinsights.com; "+
+				"connect-src 'self' https://cloudflareinsights.com",
 		)
 		c.Next()
 	}

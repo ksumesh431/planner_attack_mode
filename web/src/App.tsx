@@ -1,16 +1,21 @@
-import { useEffect } from "react";
+import { lazy, useEffect } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ToastProvider } from "./components/Toast";
-import { CalendarPage } from "./pages/CalendarPage";
 import { DayPage } from "./pages/DayPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
-import { StatsPage } from "./pages/StatsPage";
 import "./index.css";
+
+const CalendarPage = lazy(() =>
+  import("./pages/CalendarPage").then((module) => ({ default: module.CalendarPage })),
+);
+const StatsPage = lazy(() =>
+  import("./pages/StatsPage").then((module) => ({ default: module.StatsPage })),
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import {
   BarChart3,
   CalendarDays,
@@ -8,6 +9,7 @@ import {
 } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 
+import { PageLoader } from "./States";
 import { useLogout } from "../hooks/useAuth";
 
 interface NavItem {
@@ -67,7 +69,9 @@ export function AppShell() {
       </header>
 
       <main className="app-main">
-        <Outlet />
+        <Suspense fallback={<PageLoader label="Loading…" />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <nav className="bottom-nav" aria-label="Main navigation">

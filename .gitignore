@@ -16,3 +16,4 @@ bin/
 # Local configuration
 .env
 .env.local
+lighthouse.json

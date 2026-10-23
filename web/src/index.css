@@ -186,6 +186,21 @@ p {
   white-space: nowrap;
 }
 
+.boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--bg);
+}
+
+.boot-splash .brand-name {
+  font-size: 18px;
+}
+
 .desktop-nav {
   display: none;
 }
@@ -258,11 +273,9 @@ p {
 
 @keyframes page-in {
   from {
-    opacity: 0;
     transform: translateY(4px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -830,11 +843,6 @@ button.difficulty-badge:hover {
   margin: 8px 0 0;
   color: var(--muted);
   font-size: 10px;
-}
-
-.week-summary-loading p {
-  margin: 0;
-  font-size: 13px;
 }
 
 /* ---------- States ---------- */

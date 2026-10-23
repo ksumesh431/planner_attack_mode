@@ -58,7 +58,7 @@ func serveSPA(c *gin.Context, assets fs.FS, hasAssets bool) {
 	}
 
 	c.Header("Cache-Control", "no-cache")
-	http.ServeFileFS(c.Writer, c.Request, assets, "index.html")
+	serveAsset(c, assets, "index.html")
 }
 
 // serveAsset serves a hashed static file, preferring the precompressed brotli

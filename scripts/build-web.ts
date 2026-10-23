@@ -36,7 +36,7 @@ if (existsSync(publicDir)) {
 // Bun resolves every <link> in index.html as a build input. The manifest and
 // touch icon live in the public directory, so inject them after bundling.
 const indexPath = join(distDir, "index.html");
-const indexHtml = readFileSync(indexPath, "utf8");
+let indexHtml = readFileSync(indexPath, "utf8");
 const pwaLinks = [
   '<link rel="manifest" href="/manifest.webmanifest" />',
   '<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />',
@@ -45,7 +45,21 @@ const pwaLinks = [
 if (!indexHtml.includes("<!-- PWA_LINKS -->")) {
   throw new Error("index.html is missing the PWA_LINKS placeholder");
 }
-writeFileSync(indexPath, indexHtml.replace("<!-- PWA_LINKS -->", pwaLinks));
+indexHtml = indexHtml.replace("<!-- PWA_LINKS -->", pwaLinks);
+
+// Inline the stylesheet so the first paint does not wait on a render-blocking
+// request. index.html is served compressed and revalidated, so this stays small.
+const styleLink = /<link rel="stylesheet"[^>]*href="\.\/([^"]+\.css)"[^>]*>/;
+const styleMatch = indexHtml.match(styleLink);
+if (!styleMatch) {
+  throw new Error("Could not find the stylesheet link in index.html");
+}
+const cssPath = join(distDir, styleMatch[1]);
+const css = readFileSync(cssPath, "utf8");
+indexHtml = indexHtml.replace(styleMatch[0], `<style>${css}</style>`);
+rmSync(cssPath);
+
+writeFileSync(indexPath, indexHtml);
 
 // Precompress text assets at build time so the server can serve them with no
 // per-request CPU cost.

@@ -194,7 +194,7 @@ export function DayPage({ mode }: { mode: DayMode }) {
         </>
       )}
 
-      {isToday ? <WeekSummaryCard today={today} /> : null}
+      {isToday && !tasksQuery.isLoading ? <WeekSummaryCard today={today} /> : null}
 
       <TaskForm open={formOpen} dateKey={dateKey} task={editingTask} onClose={closeForm} />
       <AdSheet task={adTask} onClose={() => setAdTask(null)} />
