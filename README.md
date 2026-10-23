@@ -2,6 +2,12 @@
 
 A private, single-user attack planner. The image is public, multi-arch, and needs no build tools or registry login.
 
+## Screenshots
+
+| Today | Stats | Log in |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/today.png" alt="Today view" width="260" /> | <img src="docs/screenshots/stats.png" alt="Stats view" width="260" /> | <img src="docs/screenshots/login.png" alt="Login screen" width="260" /> |
+
 ## Run it
 
 Create an empty directory and add these two files.
