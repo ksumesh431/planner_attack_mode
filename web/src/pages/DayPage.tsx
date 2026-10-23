@@ -148,10 +148,12 @@ export function DayPage({ mode }: { mode: DayMode }) {
             </>
           )}
         </p>
-        <button type="button" className="button primary desktop-only-btn" onClick={openCreate}>
-          <Plus size={17} />
-          Add task
-        </button>
+        {tasks.length > 0 ? (
+          <button type="button" className="button primary" onClick={openCreate}>
+            <Plus size={17} />
+            Add task
+          </button>
+        ) : null}
       </div>
 
       {tasksQuery.isLoading ? (
@@ -193,12 +195,6 @@ export function DayPage({ mode }: { mode: DayMode }) {
       )}
 
       {isToday ? <WeekSummaryCard today={today} /> : null}
-
-      {tasks.length > 0 ? (
-        <button type="button" className="fab mobile-only" onClick={openCreate} aria-label="Add task">
-          <Plus size={24} />
-        </button>
-      ) : null}
 
       <TaskForm open={formOpen} dateKey={dateKey} task={editingTask} onClose={closeForm} />
       <AdSheet task={adTask} onClose={() => setAdTask(null)} />

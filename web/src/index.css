@@ -123,10 +123,6 @@ p {
   display: block;
 }
 
-.desktop-only-btn {
-  display: none !important;
-}
-
 /* ---------- Shell ---------- */
 
 .app-shell {
@@ -490,6 +486,7 @@ h1 {
 
 .list-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -838,35 +835,6 @@ button.difficulty-badge:hover {
 .week-summary-loading p {
   margin: 0;
   font-size: 13px;
-}
-
-/* ---------- Floating add ---------- */
-
-.fab {
-  position: fixed;
-  right: 16px;
-  bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
-  z-index: 35;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--ink);
-  color: var(--paper);
-  box-shadow: 0 12px 30px rgba(25, 24, 22, 0.28);
-  transition: background 150ms ease, transform 150ms ease;
-}
-
-.fab:hover {
-  background: var(--accent-dark);
-}
-
-.fab:active {
-  transform: scale(0.96);
 }
 
 /* ---------- States ---------- */
@@ -1896,10 +1864,6 @@ textarea::placeholder {
     display: none !important;
   }
 
-  .desktop-only-btn {
-    display: inline-flex !important;
-  }
-
   .top-bar {
     gap: 28px;
     padding: 14px 32px;
@@ -2080,10 +2044,6 @@ textarea::placeholder {
     grid-column: auto;
     justify-content: flex-start;
     gap: 10px;
-  }
-
-  .fab {
-    display: none;
   }
 
   .toast-stack {
