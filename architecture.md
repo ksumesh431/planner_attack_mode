@@ -61,6 +61,7 @@ GitHub Actions ──► GHCR image ──► Docker on the server
 | Backend | Go 1.27.3 + Gin 1.12 | HTTP API and static serving |
 | Database | SQLite via `modernc.org/sqlite` | Local persistence, embedded migrations |
 | Auth | bcrypt + server-side sessions | Single-password login |
+| PWA | manifest, PNG icons, minimal service worker | Installable app on Android/iOS |
 | Image | scratch + static Go binary | ~11 MB, no shell or OS packages |
 | CI | GitHub Actions + Buildx | Tests, multi-arch image, GHCR push |
 
@@ -340,8 +341,9 @@ bun run typecheck
 │   ├── config/              Environment configuration
 │   └── store/               SQLite access, migrations, tasks, calendar, stats
 ├── web/
+│   ├── public/              Manifest, icons, service worker, registration script
 │   ├── src/                 React app, API client, hooks, pages, styles, tests
-│   └── dist/                Built frontend and .br/.gz assets (gitignored)
+│   └── dist/                Built frontend, public assets, .br/.gz (gitignored)
 ├── scripts/                 Bun dev, build, test, and start orchestration
 ├── docker/data/             Data directory created with UID 10001
 ├── .github/workflows/       CI: tests plus multi-arch GHCR push

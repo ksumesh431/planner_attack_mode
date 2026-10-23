@@ -44,7 +44,7 @@ func serveSPA(c *gin.Context, assets fs.FS, hasAssets bool) {
 			info, statErr := file.Stat()
 			_ = file.Close()
 			if statErr == nil && !info.IsDir() {
-				c.Header("Cache-Control", "public, max-age=31536000, immutable")
+				c.Header("Cache-Control", assetCacheControl(clean))
 				serveAsset(c, assets, clean)
 				return
 			}
@@ -65,6 +65,9 @@ func serveSPA(c *gin.Context, assets fs.FS, hasAssets bool) {
 // or gzip copy produced at build time.
 func serveAsset(c *gin.Context, assets fs.FS, name string) {
 	c.Header("Vary", "Accept-Encoding")
+	if contentType := assetContentType(name); contentType != "" {
+		c.Header("Content-Type", contentType)
+	}
 
 	encoding, compressed := negotiateEncoding(c.GetHeader("Accept-Encoding"), assets, name)
 	if compressed == "" {
@@ -72,9 +75,6 @@ func serveAsset(c *gin.Context, assets fs.FS, name string) {
 		return
 	}
 
-	if contentType := mime.TypeByExtension(path.Ext(name)); contentType != "" {
-		c.Header("Content-Type", contentType)
-	}
 	c.Header("Content-Encoding", encoding)
 	// ServeContent deliberately skips Content-Length for encoded responses, but
 	// the size is known here. Do not set it for range requests, where the
@@ -85,6 +85,31 @@ func serveAsset(c *gin.Context, assets fs.FS, name string) {
 		}
 	}
 	http.ServeFileFS(c.Writer, c.Request, assets, compressed)
+}
+
+// assetContentType covers public files whose extension is not in Go's built-in
+// MIME table (important on the scratch image, which has no /etc/mime.types).
+func assetContentType(name string) string {
+	if strings.HasSuffix(name, ".webmanifest") {
+		return "application/manifest+json"
+	}
+	if name == "sw.js" {
+		return "text/javascript; charset=utf-8"
+	}
+	return mime.TypeByExtension(path.Ext(name))
+}
+
+// assetCacheControl keeps unhashed PWA files revalidated while hashed bundles
+// remain immutable.
+func assetCacheControl(name string) string {
+	switch {
+	case name == "sw.js" || name == "register-sw.js" || strings.HasSuffix(name, ".webmanifest"):
+		return "no-cache"
+	case strings.HasPrefix(name, "icons/"):
+		return "public, max-age=86400"
+	default:
+		return "public, max-age=31536000, immutable"
+	}
 }
 
 func negotiateEncoding(acceptEncoding string, assets fs.FS, name string) (string, string) {

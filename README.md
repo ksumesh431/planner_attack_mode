@@ -88,16 +88,31 @@ docker compose down -v   # stop and delete data
 
 Data lives in the `attack-mode-data` volume and survives restarts, container recreation, and image updates.
 
+## Install as an app
+
+The app includes a web app manifest, icons, and a service worker, so it can be installed like a native app. This **requires HTTPS**: browsers will not install a PWA served from `http://IP:8001`.
+
+Once the app is behind HTTPS, open it in Brave/Chrome on Android, use the browser menu, and choose **Install app**. The installed app is named **Attack Mode** and uses the target icon.
+
 ## Behind HTTPS
 
-Set `COOKIE_SECURE=true` and point a reverse proxy at the container. For example, with Caddy in the same Compose network:
+Set `COOKIE_SECURE=true` and put a reverse proxy with a real certificate in front of the container. A domain is required for a normal Let's Encrypt certificate; point its DNS record at the server and open ports 80 and 443.
+
+For example, with Caddy on the host:
 
 ```caddyfile
 planner.example.com {
-    reverse_proxy attack-mode:8080
+    reverse_proxy 127.0.0.1:8001
 }
 ```
 
-If the proxy runs on the host, target `127.0.0.1:8001` instead.
+Then set these in `.env` and restart:
+
+```dotenv
+COOKIE_SECURE=true
+TRUSTED_PROXIES=127.0.0.1
+```
+
+For Caddy inside the same Compose network, proxy to `attack-mode:8080` and set `TRUSTED_PROXIES` to the Docker network CIDR (for example `172.16.0.0/12`). A Cloudflare Tunnel is another option if you do not want to expose ports.
 
 Architecture, development, backups, API, and security notes are in [architecture.md](architecture.md).

@@ -16,11 +16,15 @@ func newStaticTestRouter(t *testing.T) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	assets := fstest.MapFS{
-		"index.html":    {Data: []byte("<!doctype html><title>Attack Mode</title>")},
-		"app-123.js":    {Data: []byte("console.log('plain')")},
-		"app-123.js.br": {Data: []byte("brotli-bytes")},
-		"app-123.js.gz": {Data: []byte("gzip-bytes")},
-		"app-123.css":   {Data: []byte("body{}")},
+		"index.html":           {Data: []byte("<!doctype html><title>Attack Mode</title>")},
+		"app-123.js":           {Data: []byte("console.log('plain')")},
+		"app-123.js.br":        {Data: []byte("brotli-bytes")},
+		"app-123.js.gz":        {Data: []byte("gzip-bytes")},
+		"app-123.css":          {Data: []byte("body{}")},
+		"manifest.webmanifest": {Data: []byte(`{"name":"Attack Mode"}`)},
+		"sw.js":                {Data: []byte("self.addEventListener('fetch', () => {})")},
+		"register-sw.js":       {Data: []byte("navigator.serviceWorker.register('/sw.js')")},
+		"icons/icon-192.png":   {Data: []byte("png")},
 	}
 
 	router := gin.New()
@@ -73,6 +77,42 @@ func TestStaticEncodingNegotiation(t *testing.T) {
 			}
 			if got, want := recorder.Header().Get("Content-Length"), strconv.Itoa(recorder.Body.Len()); got != want {
 				t.Fatalf("Content-Length = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestPublicAssetHeaders(t *testing.T) {
+	router := newStaticTestRouter(t)
+
+	cases := []struct {
+		path        string
+		cache       string
+		contentType string
+	}{
+		{path: "/manifest.webmanifest", cache: "no-cache", contentType: "application/manifest+json"},
+		{path: "/sw.js", cache: "no-cache", contentType: "text/javascript; charset=utf-8"},
+		{path: "/register-sw.js", cache: "no-cache", contentType: "text/javascript; charset=utf-8"},
+		{path: "/icons/icon-192.png", cache: "public, max-age=86400", contentType: "image/png"},
+		{path: "/app-123.js", cache: "public, max-age=31536000, immutable", contentType: ""},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.path, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, request)
+
+			if recorder.Code != http.StatusOK {
+				t.Fatalf("status = %d", recorder.Code)
+			}
+			if got := recorder.Header().Get("Cache-Control"); got != testCase.cache {
+				t.Fatalf("Cache-Control = %q, want %q", got, testCase.cache)
+			}
+			if testCase.contentType != "" {
+				if got := recorder.Header().Get("Content-Type"); got != testCase.contentType {
+					t.Fatalf("Content-Type = %q, want %q", got, testCase.contentType)
+				}
 			}
 		})
 	}
