@@ -1,0 +1,20 @@
+{
+  "name": "attack-mode",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "bun run scripts/dev.ts",
+    "build": "bun run scripts/build.ts",
+    "build:web": "bun run scripts/build-web.ts",
+    "start": "bun run scripts/start.ts",
+    "test": "bun run scripts/test.ts",
+    "typecheck": "bun run --cwd web typecheck",
+    "go:test": "go test -tags dev ./...",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  }
+}

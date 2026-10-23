@@ -1,0 +1,18 @@
+# Bun
+node_modules/
+web/dist/
+
+# Go build output
+bin/
+*.exe
+*.test
+
+# Local data
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Local configuration
+.env
+.env.local
