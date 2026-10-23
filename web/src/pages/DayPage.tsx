@@ -101,10 +101,18 @@ export function DayPage({ mode }: { mode: DayMode }) {
 
         <div className="day-controls">
           {isToday ? (
-            <Link to="/tomorrow" className="button ghost small plan-tomorrow-link">
+            <Link to="/tomorrow" className="button ghost small day-context-action">
               Plan tomorrow
             </Link>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              className="button secondary small day-context-action"
+              onClick={() => navigate("/today")}
+            >
+              Today
+            </button>
+          )}
           <div className="date-stepper">
             <button
               type="button"
@@ -125,15 +133,6 @@ export function DayPage({ mode }: { mode: DayMode }) {
               <ChevronRight size={20} />
             </button>
           </div>
-          {!isToday ? (
-            <button
-              type="button"
-              className="button secondary small"
-              onClick={() => navigate("/today")}
-            >
-              Today
-            </button>
-          ) : null}
         </div>
       </header>
 
