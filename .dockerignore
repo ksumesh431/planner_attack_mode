@@ -9,7 +9,7 @@ node_modules
 bin
 web/dist
 
-data
+/data
 *.db
 *.db-shm
 *.db-wal
