@@ -190,6 +190,108 @@ func TestCalendarAndStats(t *testing.T) {
 	}
 }
 
+func TestCloneTasks(t *testing.T) {
+	st := newTestStore(t)
+	ctx := context.Background()
+
+	completed := true
+	finished, err := st.CreateTask(ctx, CreateTaskInput{
+		Date:                "2026-10-23",
+		What:                "Finished task",
+		HowMuch:             "1 page",
+		When:                "morning",
+		Where:               "desk",
+		PerceivedDifficulty: 6,
+	})
+	if err != nil {
+		t.Fatalf("create finished task: %v", err)
+	}
+	if _, err := st.UpdateTask(ctx, finished.ID, UpdateTaskInput{
+		Completed:        &completed,
+		ActualDifficulty: intPtr(9),
+	}); err != nil {
+		t.Fatalf("complete finished task: %v", err)
+	}
+
+	open, err := st.CreateTask(ctx, CreateTaskInput{
+		Date:                "2026-10-23",
+		What:                "Open task",
+		PerceivedDifficulty: 4,
+	})
+	if err != nil {
+		t.Fatalf("create open task: %v", err)
+	}
+
+	cloned, err := st.CloneTasks(ctx, "2026-10-23", "2026-10-24")
+	if err != nil {
+		t.Fatalf("clone tasks: %v", err)
+	}
+	if cloned != 2 {
+		t.Fatalf("expected 2 cloned tasks, got %d", cloned)
+	}
+
+	source, err := st.ListTasks(ctx, "2026-10-23")
+	if err != nil {
+		t.Fatalf("list source tasks: %v", err)
+	}
+	if len(source) != 2 {
+		t.Fatalf("source day should be unchanged, got %d tasks", len(source))
+	}
+	if !source[0].Completed || source[0].ActualDifficulty == nil || *source[0].ActualDifficulty != 9 {
+		t.Fatalf("source completion should be unchanged: %+v", source[0])
+	}
+
+	target, err := st.ListTasks(ctx, "2026-10-24")
+	if err != nil {
+		t.Fatalf("list target tasks: %v", err)
+	}
+	if len(target) != 2 {
+		t.Fatalf("expected 2 target tasks, got %d", len(target))
+	}
+	if target[0].What != "Finished task" || target[1].What != "Open task" {
+		t.Fatalf("target order should follow the source: %+v", target)
+	}
+
+	for _, task := range target {
+		if task.Date != "2026-10-24" {
+			t.Fatalf("unexpected target date: %+v", task)
+		}
+		if task.Completed || task.CompletedAt != nil || task.ActualDifficulty != nil {
+			t.Fatalf("cloned task should be fresh and uncompleted: %+v", task)
+		}
+		if task.ID == finished.ID || task.ID == open.ID {
+			t.Fatalf("cloned task should get a new id: %+v", task)
+		}
+	}
+
+	clonedFinished := target[0]
+	if clonedFinished.HowMuch != "1 page" || clonedFinished.When != "morning" ||
+		clonedFinished.Where != "desk" || clonedFinished.PerceivedDifficulty != 6 {
+		t.Fatalf("plan fields were not copied: %+v", clonedFinished)
+	}
+	if target[1].PerceivedDifficulty != 4 {
+		t.Fatalf("perceived difficulty was not copied: %+v", target[1])
+	}
+
+	empty, err := st.CloneTasks(ctx, "2026-10-25", "2026-10-26")
+	if err != nil {
+		t.Fatalf("clone empty day: %v", err)
+	}
+	if empty != 0 {
+		t.Fatalf("expected 0 cloned tasks from an empty day, got %d", empty)
+	}
+
+	if _, err := st.CloneTasks(ctx, "2026-10-23", "2026-10-23"); !errors.Is(err, ErrValidation) {
+		t.Fatalf("expected validation error cloning to the same date, got %v", err)
+	}
+	if _, err := st.CloneTasks(ctx, "not-a-date", "2026-10-24"); !errors.Is(err, ErrValidation) {
+		t.Fatalf("expected validation error for an invalid source date, got %v", err)
+	}
+	if _, err := st.CloneTasks(ctx, "2026-10-23", "2026-13-01"); !errors.Is(err, ErrValidation) {
+		t.Fatalf("expected validation error for an invalid target date, got %v", err)
+	}
+}
+
 func TestSessions(t *testing.T) {
 	st := newTestStore(t)
 	ctx := context.Background()

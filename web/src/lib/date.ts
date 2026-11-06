@@ -55,6 +55,10 @@ export function shortDayLabel(key: string): string {
   return format(parseISO(key), "EEE d");
 }
 
+export function mediumDayLabel(key: string): string {
+  return format(parseISO(key), "EEE, MMM d");
+}
+
 export function dayOfWeekLabel(key: string): string {
   return format(parseISO(key), "EEEE");
 }

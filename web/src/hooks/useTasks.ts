@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import type {
   CalendarResponse,
+  CloneTasksInput,
+  CloneTasksResponse,
   CreateTaskInput,
   DaySummary,
   Stats,
@@ -50,6 +52,15 @@ export function useDeleteTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => api.delete(`/api/tasks/${id}`),
+    onSuccess: () => invalidateTaskViews(queryClient),
+  });
+}
+
+export function useCloneTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CloneTasksInput) =>
+      api.post<CloneTasksResponse>("/api/tasks/clone", input),
     onSuccess: () => invalidateTaskViews(queryClient),
   });
 }

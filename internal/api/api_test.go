@@ -182,6 +182,94 @@ func TestAuthAndTaskFlow(t *testing.T) {
 	}
 }
 
+func TestCloneTasksEndpoint(t *testing.T) {
+	env := newAPITestEnv(t)
+	cookie := login(t, env.handler)
+
+	create := requestJSON(t, env.handler, http.MethodPost, "/api/tasks", map[string]any{
+		"date":                "2026-10-23",
+		"what":                "Clone me",
+		"howMuch":             "2 pages",
+		"when":                "afternoon",
+		"where":               "library",
+		"perceivedDifficulty": 7,
+	}, cookie)
+	if create.Code != http.StatusCreated {
+		t.Fatalf("create task status = %d, body = %s", create.Code, create.Body.String())
+	}
+
+	clone := requestJSON(t, env.handler, http.MethodPost, "/api/tasks/clone", map[string]string{
+		"from": "2026-10-23",
+		"to":   "2026-10-24",
+	}, cookie)
+	if clone.Code != http.StatusOK {
+		t.Fatalf("clone status = %d, body = %s", clone.Code, clone.Body.String())
+	}
+	var cloneBody struct {
+		Cloned int64 `json:"cloned"`
+	}
+	if err := json.Unmarshal(clone.Body.Bytes(), &cloneBody); err != nil {
+		t.Fatalf("decode clone response: %v", err)
+	}
+	if cloneBody.Cloned != 1 {
+		t.Fatalf("expected 1 cloned task, got %d", cloneBody.Cloned)
+	}
+
+	list := requestJSON(t, env.handler, http.MethodGet, "/api/tasks?date=2026-10-24", nil, cookie)
+	if list.Code != http.StatusOK {
+		t.Fatalf("list cloned tasks status = %d, body = %s", list.Code, list.Body.String())
+	}
+	var listBody struct {
+		Tasks []store.Task `json:"tasks"`
+	}
+	if err := json.Unmarshal(list.Body.Bytes(), &listBody); err != nil {
+		t.Fatalf("decode cloned tasks: %v", err)
+	}
+	if len(listBody.Tasks) != 1 {
+		t.Fatalf("expected 1 task on the target day, got %d", len(listBody.Tasks))
+	}
+	clonedTask := listBody.Tasks[0]
+	if clonedTask.What != "Clone me" || clonedTask.HowMuch != "2 pages" ||
+		clonedTask.When != "afternoon" || clonedTask.Where != "library" ||
+		clonedTask.PerceivedDifficulty != 7 {
+		t.Fatalf("plan fields were not copied: %+v", clonedTask)
+	}
+	if clonedTask.Completed || clonedTask.CompletedAt != nil || clonedTask.ActualDifficulty != nil {
+		t.Fatalf("cloned task should be fresh and uncompleted: %+v", clonedTask)
+	}
+
+	if response := requestJSON(t, env.handler, http.MethodPost, "/api/tasks/clone", map[string]string{
+		"from": "2026-10-23",
+		"to":   "2026-10-24",
+	}, nil); response.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthenticated clone status = %d", response.Code)
+	}
+
+	if response := requestJSON(t, env.handler, http.MethodPost, "/api/tasks/clone", map[string]string{
+		"from": "2026-10-23",
+		"to":   "2026-10-23",
+	}, cookie); response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("same-date clone status = %d, body = %s", response.Code, response.Body.String())
+	}
+
+	empty := requestJSON(t, env.handler, http.MethodPost, "/api/tasks/clone", map[string]string{
+		"from": "2026-10-25",
+		"to":   "2026-10-26",
+	}, cookie)
+	if empty.Code != http.StatusOK {
+		t.Fatalf("empty clone status = %d, body = %s", empty.Code, empty.Body.String())
+	}
+	var emptyBody struct {
+		Cloned int64 `json:"cloned"`
+	}
+	if err := json.Unmarshal(empty.Body.Bytes(), &emptyBody); err != nil {
+		t.Fatalf("decode empty clone response: %v", err)
+	}
+	if emptyBody.Cloned != 0 {
+		t.Fatalf("expected 0 cloned tasks, got %d", emptyBody.Cloned)
+	}
+}
+
 func TestSecurityHeaders(t *testing.T) {
 	env := newAPITestEnv(t)
 

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Plus } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { errorMessage } from "../api/client";
 import type { Task } from "../api/types";
 import { AdSheet } from "../components/AdSheet";
+import { CloneTasksSheet } from "../components/CloneTasksSheet";
 import { EmptyState, ErrorState, PageLoader } from "../components/States";
 import { TaskForm } from "../components/TaskForm";
 import { TaskCards, TaskTable } from "../components/TaskList";
@@ -42,6 +43,7 @@ export function DayPage({ mode }: { mode: DayMode }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [adTask, setAdTask] = useState<Task | null>(null);
+  const [cloneOpen, setCloneOpen] = useState(false);
   const [pendingId, setPendingId] = useState<number | null>(null);
 
   if (!valid) {
@@ -148,10 +150,20 @@ export function DayPage({ mode }: { mode: DayMode }) {
           )}
         </p>
         {tasks.length > 0 ? (
-          <button type="button" className="button primary" onClick={openCreate}>
-            <Plus size={17} />
-            Add task
-          </button>
+          <div className="toolbar-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => setCloneOpen(true)}
+            >
+              <Copy size={16} />
+              Clone
+            </button>
+            <button type="button" className="button primary" onClick={openCreate}>
+              <Plus size={17} />
+              Add task
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -197,6 +209,12 @@ export function DayPage({ mode }: { mode: DayMode }) {
 
       <TaskForm open={formOpen} dateKey={dateKey} task={editingTask} onClose={closeForm} />
       <AdSheet task={adTask} onClose={() => setAdTask(null)} />
+      <CloneTasksSheet
+        open={cloneOpen}
+        sourceDate={dateKey}
+        tasks={tasks}
+        onClose={() => setCloneOpen(false)}
+      />
     </div>
   );
 }

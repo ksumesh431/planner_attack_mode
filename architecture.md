@@ -120,6 +120,7 @@ Stores `token_hash`, `created_at`, and `expires_at`. The raw token is only ever 
 
 - **PD** is required; **AD** is required to mark a task complete.
 - AD is retained if a completed task is reopened, but stats only use AD from completed tasks.
+- **Cloning** copies the plan fields (what, how much, when, where, and PD) to another date as fresh tasks. Completion and AD are reset, and cloned tasks are appended to the target day.
 - A **hard task** is PD ≥ 7. It is informational; no rules are enforced.
 - Weeks run **Monday–Sunday**.
 - The **calibration gap** is `average AD − average PD of completed tasks`.
@@ -143,6 +144,7 @@ All routes except login, logout, and health require the `attack_session` cookie.
 | `GET` | `/api/auth/me` | Check whether the session is valid |
 | `GET` | `/api/tasks?date=YYYY-MM-DD` | List tasks for one date |
 | `POST` | `/api/tasks` | Create a task |
+| `POST` | `/api/tasks/clone` | Copy all tasks from one date to another as fresh tasks |
 | `PATCH` | `/api/tasks/:id` | Partial update, including completion and AD |
 | `DELETE` | `/api/tasks/:id` | Delete a task |
 | `GET` | `/api/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD` | Per-day aggregates |

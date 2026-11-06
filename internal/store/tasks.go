@@ -186,6 +186,52 @@ func (s *Store) DeleteTask(ctx context.Context, id int64) error {
 	return nil
 }
 
+// CloneTasks copies every task on one date to another as a fresh,
+// uncompleted task. Plan fields are preserved; completion and actual
+// difficulty are reset. The source day is left untouched.
+func (s *Store) CloneTasks(ctx context.Context, from, to string) (int64, error) {
+	from = strings.TrimSpace(from)
+	to = strings.TrimSpace(to)
+
+	if err := validateDate(from); err != nil {
+		return 0, err
+	}
+	if err := validateDate(to); err != nil {
+		return 0, err
+	}
+	if from == to {
+		return 0, validationError("Choose a different date to clone to.")
+	}
+
+	now := formatTime(time.Now().UTC())
+	result, err := s.db.ExecContext(
+		ctx,
+		`INSERT INTO tasks (
+			task_date, what, how_much, when_text, where_text,
+			perceived_difficulty, actual_difficulty, completed,
+			completed_at, created_at, updated_at
+		)
+		SELECT ?, what, how_much, when_text, where_text,
+			perceived_difficulty, NULL, 0, NULL, ?, ?
+		FROM tasks
+		WHERE task_date = ?
+		ORDER BY id ASC`,
+		to,
+		now,
+		now,
+		from,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("clone tasks: %w", err)
+	}
+
+	cloned, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("clone tasks rows affected: %w", err)
+	}
+	return cloned, nil
+}
+
 func normalizeCreate(in *CreateTaskInput) error {
 	in.Date = strings.TrimSpace(in.Date)
 	in.What = strings.TrimSpace(in.What)

@@ -32,6 +32,15 @@ export interface UpdateTaskInput {
   completed?: boolean;
 }
 
+export interface CloneTasksInput {
+  from: string;
+  to: string;
+}
+
+export interface CloneTasksResponse {
+  cloned: number;
+}
+
 export interface DaySummary {
   date: string;
   total: number;

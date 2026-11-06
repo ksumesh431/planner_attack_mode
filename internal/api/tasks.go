@@ -69,6 +69,29 @@ func updateTaskHandler(st *store.Store) gin.HandlerFunc {
 	}
 }
 
+type cloneTasksRequest struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
+func cloneTasksHandler(st *store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var request cloneTasksRequest
+		if err := c.ShouldBindJSON(&request); err != nil {
+			respondError(c, http.StatusBadRequest, "invalid_request", "Invalid request body.")
+			return
+		}
+
+		cloned, err := st.CloneTasks(c.Request.Context(), request.From, request.To)
+		if err != nil {
+			handleStoreError(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"cloned": cloned})
+	}
+}
+
 func deleteTaskHandler(st *store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, ok := parseTaskID(c)

@@ -63,6 +63,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	})
 	protected.GET("/tasks", listTasksHandler(deps.Store))
 	protected.POST("/tasks", createTaskHandler(deps.Store))
+	protected.POST("/tasks/clone", cloneTasksHandler(deps.Store))
 	protected.PATCH("/tasks/:id", updateTaskHandler(deps.Store))
 	protected.DELETE("/tasks/:id", deleteTaskHandler(deps.Store))
 	protected.GET("/calendar", calendarHandler(deps.Store))

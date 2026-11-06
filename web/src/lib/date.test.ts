@@ -7,6 +7,7 @@ import {
   getMonthRange,
   getWeekRange,
   isValidDateKey,
+  mediumDayLabel,
   rangeLabel,
   toDateKey,
 } from "./date";
@@ -56,6 +57,11 @@ describe("date helpers", () => {
       from: "2026-09-28",
       to: "2026-11-08",
     });
+  });
+
+  test("labels single days compactly", () => {
+    expect(mediumDayLabel("2026-10-23")).toBe("Fri, Oct 23");
+    expect(mediumDayLabel("2027-01-01")).toBe("Fri, Jan 1");
   });
 
   test("labels ranges compactly", () => {
