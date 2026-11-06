@@ -242,11 +242,11 @@ docker buildx build \
 
 `.github/workflows/ci.yml` runs on pull requests, pushes to `main`, `v*` tags, and manual dispatch.
 
-- **Pull requests:** tests, typecheck, `go vet`, plus an AMD64 image build (not pushed).
-- **Push to `main`:** the same checks, then a multi-arch image pushed to GHCR with `latest`, `main`, and `sha-<commit>` tags.
-- **`v*` tags:** the same checks and push, plus semver tags.
+- **Pull requests:** an AMD64 image build (not pushed).
+- **Push to `main`:** a multi-arch image pushed to GHCR with `latest`, `main`, and `sha-<commit>` tags.
+- **`v*` tags:** the same build and push, plus semver tags.
 
-The workflow uses the built-in `GITHUB_TOKEN`; no Docker Hub credentials are needed. Private GHCR packages require a `read:packages` token on the server.
+The workflow is build-only; tests, typecheck, and `go vet` are local verification steps (§11). It uses the built-in `GITHUB_TOKEN`; no Docker Hub credentials are needed. Private GHCR packages require a `read:packages` token on the server.
 
 ## 9. Deployment notes
 
@@ -305,6 +305,8 @@ Sessions are stored in the same database, so restoring a backup also restores th
 bun run test
 bun run typecheck
 ```
+
+These checks run locally, not in CI; the GitHub workflow only builds the image.
 
 - Frontend tests: date helpers, stats aggregation, and API 401/session behaviour.
 - Go tests: task lifecycle and validation, calendar/stats aggregation, sessions, auth, task CRUD, static serving/compression, security headers, and error paths.
