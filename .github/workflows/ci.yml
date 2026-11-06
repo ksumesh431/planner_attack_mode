@@ -15,25 +15,121 @@ permissions:
   contents: read
 
 jobs:
+  # Build each architecture on a native GitHub-hosted runner and push by digest.
+  # The arm64 runner is available for public repositories; private repositories
+  # fall back to amd64, where the Dockerfile cross-compiles the static Go binary.
   image:
-    name: Build multi-arch image
-    runs-on: ubuntu-24.04
+    name: Build ${{ matrix.platform }}
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            arch: arm64
+            runner: ${{ github.event.repository.private && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Compute image name
         id: image
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      # No QEMU is required: the Dockerfile cross-compiles on the build platform
-      # and the scratch runtime stage contains no RUN instructions.
-      - uses: docker/setup-buildx-action@v4
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v4
-        if: github.event_name != 'pull_request'
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ steps.image.outputs.name }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+      - name: Export digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.build.outputs.digest }}"
+          if [ -z "$digest" ]; then
+            echo "ERROR: build produced no digest"
+            exit 1
+          fi
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Pull requests validate the amd64 image without pushing.
+  pr-image:
+    name: Build PR image (amd64)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha,scope=amd64
+
+  merge:
+    name: Merge multi-arch manifest
+    if: github.event_name != 'pull_request'
+    needs: image
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Compute image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -46,18 +142,46 @@ jobs:
           images: ${{ steps.image.outputs.name }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=sha,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          shopt -s nullglob
+          digests=(*)
+          if [ "${#digests[@]}" -eq 0 ]; then
+            echo "ERROR: no digests found"
+            exit 1
+          fi
+          images=()
+          for digest in "${digests[@]}"; do
+            images+=("${{ steps.image.outputs.name }}@sha256:${digest}")
+          done
+          tag_args=()
+          while IFS= read -r tag; do
+            [ -n "$tag" ] && tag_args+=("-t" "$tag")
+          done <<< "${{ steps.meta.outputs.tags }}"
+          if [ "${#tag_args[@]}" -eq 0 ]; then
+            echo "ERROR: no tags generated"
+            exit 1
+          fi
+          docker buildx imagetools create "${tag_args[@]}" "${images[@]}"
+
+      - name: Inspect image
+        run: |
+          first_tag=$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | head -n1)
+          docker buildx imagetools inspect "$first_tag"
+
+      - name: Write summary
+        run: |
+          {
+            echo "## Multi-arch image pushed"
+            echo ""
+            echo "Tags:"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+            echo "Platforms: linux/amd64, linux/arm64"
+          } >> "$GITHUB_STEP_SUMMARY"

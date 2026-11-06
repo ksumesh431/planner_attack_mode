@@ -243,10 +243,10 @@ docker buildx build \
 `.github/workflows/ci.yml` runs on pull requests, pushes to `main`, `v*` tags, and manual dispatch.
 
 - **Pull requests:** an AMD64 image build (not pushed).
-- **Push to `main`:** a multi-arch image pushed to GHCR with `latest`, `main`, and `sha-<commit>` tags.
-- **`v*` tags:** the same build and push, plus semver tags.
+- **Push to `main`:** per-architecture image builds on native GitHub-hosted runners, pushed by digest and merged into one multi-arch GHCR manifest with `latest`, `main`, and `sha-<commit>` tags.
+- **`v*` tags:** the same build and manifest push, plus semver tags.
 
-The workflow is build-only; tests, typecheck, and `go vet` are local verification steps (§11). It uses the built-in `GITHUB_TOKEN`; no Docker Hub credentials are needed. Private GHCR packages require a `read:packages` token on the server.
+The arm64 build uses `ubuntu-24.04-arm` for public repositories; private repositories fall back to an amd64 runner and the Dockerfile cross-compiles the static Go binary. The workflow is build-only; tests, typecheck, and `go vet` are local verification steps (§11). It uses the built-in `GITHUB_TOKEN`; no Docker Hub credentials are needed. Private GHCR packages require a `read:packages` token on the server.
 
 ## 9. Deployment notes
 
