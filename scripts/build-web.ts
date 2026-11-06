@@ -19,6 +19,9 @@ const build = Bun.spawn([process.execPath, "run", "build"], {
   cwd: webDir,
   stdout: "inherit",
   stderr: "inherit",
+  // Bun resolves React's production CJS entry from NODE_ENV at bundle time;
+  // the --define in web/package.json alone still ships the development build.
+  env: { ...process.env, NODE_ENV: "production" },
 });
 
 const buildCode = await build.exited;

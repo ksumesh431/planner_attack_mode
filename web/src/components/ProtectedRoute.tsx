@@ -1,15 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useSession } from "../hooks/useAuth";
-import { ErrorState, PageLoader } from "./States";
+import { ErrorState } from "./States";
 
 export function ProtectedRoute() {
   const session = useSession();
   const location = useLocation();
-
-  if (session.isLoading) {
-    return <PageLoader label="Opening attack mode…" />;
-  }
 
   if (session.isError) {
     return (
@@ -23,7 +19,10 @@ export function ProtectedRoute() {
     );
   }
 
-  if (!session.data) {
+  // Render immediately while the session check is in flight so the page's
+  // heading is not blocked on /api/auth/me. A successful check keeps the
+  // outlet mounted; a failed one redirects as soon as the answer is known.
+  if (session.data === false) {
     return (
       <Navigate
         to="/login"

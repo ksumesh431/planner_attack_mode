@@ -2,6 +2,7 @@ import { lazy, useEffect } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import { ApiError } from "./api/client";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ToastProvider } from "./components/Toast";
@@ -22,7 +23,12 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 15_000,
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: (failureCount, error) => {
+        if (error instanceof ApiError && error.status < 500) {
+          return false;
+        }
+        return failureCount < 1;
+      },
     },
     mutations: {
       retry: 0,
