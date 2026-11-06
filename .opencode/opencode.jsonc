@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Project guidance for Attack Mode. AGENTS.md is auto-discovered; the
+  // numbered files below add the detailed, always-loaded rules.
+  "instructions": [
+    ".agent/00-workflow.md",
+    ".agent/10-go.md",
+    ".agent/20-frontend.md",
+    ".agent/30-quality.md",
+    ".agent/40-requirements.md"
+  ]
+}
